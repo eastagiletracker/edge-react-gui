@@ -15,6 +15,7 @@ import {
   SendScene2,
   type SendScene2Params
 } from '../../components/scenes/SendScene2'
+import { lstrings } from '../../locales/strings'
 import { avaxCurrencyInfo } from '../../util/fake/fakeAvaxInfo'
 import { btcCurrencyInfo } from '../../util/fake/fakeBtcInfo'
 import { makeFakePlugin } from '../../util/fake/fakeCurrencyPlugin'
@@ -327,6 +328,83 @@ describe('SendScene2', () => {
     // The total's unit follows the display denomination, like its value:
     expect(rendered.getByText('13579 sats')).toBeTruthy()
     expect(rendered.queryByText('13579 BTC')).toBeNull()
+    rendered.unmount()
+  })
+  it('arms Stealth Send from the stealth param', () => {
+    if (btcWallet == null) return
+
+    const rootState: FakeState = { ...fakeRootState, core: { account } }
+
+    const rendered = render(
+      <FakeProviders initialState={rootState}>
+        <SendScene2
+          {...fakeEdgeAppSceneProps('send2', {
+            walletId: btcWallet.id,
+            tokenId: null,
+            stealth: true,
+            doCheckAndShowGetCryptoModal: false
+          })}
+        />
+      </FakeProviders>
+    )
+
+    expect(
+      rendered.getByText(lstrings.stealth_send_info, { exact: false })
+    ).toBeTruthy()
+    rendered.unmount()
+  })
+  it('leaves Stealth Send off when the stealth param is absent', () => {
+    if (btcWallet == null) return
+
+    const rootState: FakeState = { ...fakeRootState, core: { account } }
+
+    const rendered = render(
+      <FakeProviders initialState={rootState}>
+        <SendScene2
+          {...fakeEdgeAppSceneProps('send2', {
+            walletId: btcWallet.id,
+            tokenId: null,
+            doCheckAndShowGetCryptoModal: false
+          })}
+        />
+      </FakeProviders>
+    )
+
+    expect(rendered.getByText(lstrings.stealth_send_toggle)).toBeTruthy()
+    expect(
+      rendered.queryByText(lstrings.stealth_send_info, { exact: false })
+    ).toBeNull()
+    rendered.unmount()
+  })
+  it('ignores the stealth param where a tap would be refused', () => {
+    if (btcWallet == null) return
+
+    const rootState: FakeState = { ...fakeRootState, core: { account } }
+
+    // The toggle is not offered for a send that arrives with an address:
+    const rendered = render(
+      <FakeProviders initialState={rootState}>
+        <SendScene2
+          {...fakeEdgeAppSceneProps('send2', {
+            walletId: btcWallet.id,
+            tokenId: null,
+            spendInfo: {
+              tokenId: null,
+              spendTargets: [
+                { publicAddress: 'some pub address', nativeAmount: '1234' }
+              ]
+            },
+            stealth: true,
+            doCheckAndShowGetCryptoModal: false
+          })}
+        />
+      </FakeProviders>
+    )
+
+    expect(rendered.queryByText(lstrings.stealth_send_toggle)).toBeNull()
+    expect(
+      rendered.queryByText(lstrings.stealth_send_info, { exact: false })
+    ).toBeNull()
     rendered.unmount()
   })
 })
